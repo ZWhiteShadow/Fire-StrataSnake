@@ -1,6 +1,4 @@
 package com.example.stratasnake27;
-
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Point;
@@ -36,10 +34,10 @@ public class SnakeEngine extends SurfaceView implements Runnable {
     }
 
     // For tracking movement Heading
-    public enum Heading {UP, UR, RIGHT, DR, DOWN, DL, LEFT, UL}
-
-    // Start by heading to the right
-    private Heading heading = Heading.RIGHT;
+    static char direction = 'D';
+    public static void setDirection(char newDirection){
+        direction = newDirection;
+    }
 
     // Where is Bob hiding?
     private int bobX;
@@ -47,10 +45,9 @@ public class SnakeEngine extends SurfaceView implements Runnable {
 
     // Control pausing between updates
     private long nextFrameTime;
-    // We will draw the frame much more often
 
     // How many points does the player have
-    private int score;
+    private static int score;
 
     // The location in the grid of all the segments
     private final int[] x;
@@ -72,7 +69,6 @@ public class SnakeEngine extends SurfaceView implements Runnable {
     int SQUARES_ACROSS, SQUARES_DOWN;
     int UNIT_SIZE, GAME_UNITS, TOTAL_SQUARES;
     int sneggyBodyParts;
-    boolean step = false;
 
     public SnakeEngine(Context context, Point size) {
         super(context);
@@ -157,59 +153,23 @@ public class SnakeEngine extends SurfaceView implements Runnable {
         }
 
         // Move the head in the appropriate heading
-        switch (heading) {
-            case UP:
+        switch (direction) {
+            case 'U':
                 y[0]--;
                 break;
 
-            case RIGHT:
+            case 'R':
                 x[0]++;
                 break;
 
-            case DOWN:
+            case 'D':
                 y[0]++;
                 break;
 
-            case LEFT:
+            case 'L':
                 x[0]--;
                 break;
 
-            case UL: {  // UP Left
-                if (!step) {
-                    y[0]--;
-                    step = true;
-                } else {
-                    x[0]--;
-                    step = false;
-                }
-            }
-            case DL: { // Down Left
-                if (!step) {
-                    y[0]++;
-                    step = true;
-                } else {
-                    x[0]--;
-                    step = false;
-                }
-            }
-            case UR: {  // UP Right
-                if (!step) {
-                    y[0]--;
-                    step = true;
-                } else {
-                    x[0]++;
-                    step = false;
-                }
-            }
-            case DR: {  // Down Right
-                if (!step) {
-                    y[0]++;
-                    step = true;
-                } else {
-                    x[0]++;
-                    step = false;
-                }
-            }
         }
         //Loop around sides
         if (x[0] < 0) {
@@ -303,73 +263,67 @@ public class SnakeEngine extends SurfaceView implements Runnable {
         return false;
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    @Override
-    public boolean onTouchEvent(MotionEvent motionEvent) {
 
-        if ((motionEvent.getAction() & MotionEvent.ACTION_MASK) == MotionEvent.ACTION_UP) {
-            if (motionEvent.getX() >= SQUARES_ACROSS / 2f) {
-                switch (heading) {
-                    case UP:
-                        heading = Heading.RIGHT;
+
+        @Override
+        public boolean onTouchEvent (MotionEvent motionEvent){
+            float xDiff = (x[0] * UNIT_SIZE) - motionEvent.getX();
+            float yDiff = (y[0] * UNIT_SIZE) - motionEvent.getY();
+            xDiff = (xDiff <  UNIT_SIZE) ? 0 : xDiff;
+            yDiff = (yDiff <  UNIT_SIZE) ? 0 : yDiff;
+
+            if ((motionEvent.getAction() & MotionEvent.ACTION_MASK) == MotionEvent.ACTION_UP) {
+                switch (direction) {
+
+                    case 'U':
+                    case 'D':
+                        if (xDiff > 0) {
+                            direction = 'L';
+                        } else {
+                            direction = 'R';
+                        }
                         break;
-                    case RIGHT:
-                        heading = Heading.DOWN;
-                        break;
-                    case DOWN:
-                        heading = Heading.LEFT;
-                        break;
-                    case LEFT:
-                        heading = Heading.UP;
-                        break;
-                }
-            } else {
-                switch (heading) {
-                    case UP:
-                        heading = Heading.LEFT;
-                        break;
-                    case LEFT:
-                        heading = Heading.DOWN;
-                        break;
-                    case DOWN:
-                        heading = Heading.RIGHT;
-                        break;
-                    case RIGHT:
-                        heading = Heading.UP;
+
+                    case 'L':
+                    case 'R':
+                        if (yDiff > 0) {
+                            direction = 'U';
+                        } else {
+                            direction = 'D';
+                        }
                         break;
                 }
             }
+            return true;
         }
-        return true;
-    }
 
-    public void drawGrid(Canvas canvas) {
-        //draw Vertical Lines on board
-        paint.setColor(Color.rgb(0, 100, 0));
-        for (int i = 0; i <= SQUARES_ACROSS; i++) {
-            canvas.drawLine(i * UNIT_SIZE, 0, i * UNIT_SIZE, UNIT_SIZE * SQUARES_DOWN, paint);
-        }
-        //Draw Horizontal
-        for (int i = 0; i <= SQUARES_DOWN; i++) {
-            canvas.drawLine(0, i * UNIT_SIZE, UNIT_SIZE * SQUARES_ACROSS, i * UNIT_SIZE, paint);
-        }
-        paint.setStyle(Paint.Style.FILL);
-        //Draw Middle circles
-        for (int i = 0; i <= SQUARES_ACROSS; i++) {
-            for (int j = 0; j <= SQUARES_DOWN; j++) {
-                if (((j + i) / 2) % 2 == 0) {
-                    canvas.drawCircle(i * UNIT_SIZE, j * UNIT_SIZE, 3, paint);
-                } else {
-                    canvas.drawCircle(i * UNIT_SIZE, j * UNIT_SIZE, 6, paint);
+        public void drawGrid (Canvas canvas){
+            //draw Vertical Lines on board
+            paint.setColor(Color.rgb(0, 100, 0));
+            for (int i = 0; i <= SQUARES_ACROSS; i++) {
+                canvas.drawLine(i * UNIT_SIZE, 0, i * UNIT_SIZE, UNIT_SIZE * SQUARES_DOWN, paint);
+            }
+            //Draw Horizontal
+            for (int i = 0; i <= SQUARES_DOWN; i++) {
+                canvas.drawLine(0, i * UNIT_SIZE, UNIT_SIZE * SQUARES_ACROSS, i * UNIT_SIZE, paint);
+            }
+            paint.setStyle(Paint.Style.FILL);
+            //Draw Middle circles
+            for (int i = 0; i <= SQUARES_ACROSS; i++) {
+                for (int j = 0; j <= SQUARES_DOWN; j++) {
+                    if (((j + i) / 2) % 2 == 0) {
+                        canvas.drawCircle(i * UNIT_SIZE, j * UNIT_SIZE, 3, paint);
+                    } else {
+                        canvas.drawCircle(i * UNIT_SIZE, j * UNIT_SIZE, 6, paint);
+                    }
                 }
             }
         }
-    }
 
-    //        if (getValueAtXY(x[0], y[0]) != 0) {
+        //        if (getValueAtXY(x[0], y[0]) != 0) {
 //            int numbersHit = getValueAtXY(x[0], y[0]);
 //            changeAtXY(new int[]{x[0], y[0]}, "E", -1 * numbersHit);
 //            newNumbers(numbersHit);
 //            slowerSpeed();
 //        }
-}
+    }
