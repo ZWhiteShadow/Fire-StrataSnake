@@ -1,23 +1,25 @@
 package com.example.stratasnake27;
+
+import static android.graphics.Color.rgb;
+
+import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.Point;
-import android.os.Build;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Random;
+
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
 public class SnakeEngine extends SurfaceView implements Runnable {
 
-    ArrayList<SneggyBoard> squares; // list holding board dimensions and what squares are where
+    static ArrayList<SneggyBoard> squares; // list holding board dimensions and what squares are where
     static final int SIDE_FOR_SCORE = 320;
     static final int BOTTOM_PANEL = 125;
     static int SCREEN_WIDTH = 1200;
@@ -34,39 +36,43 @@ public class SnakeEngine extends SurfaceView implements Runnable {
     public final Paint paint = new Paint();
     // Required to use canvas
     private final SurfaceHolder surfaceHolder;
-    int[] x; // x coordinates of sneggy
-    int[] y; // y coordinates of sneggy
-    float scoreMultiplierFloat; //score bonus
-    int score;
-    int lastScore;
-    float sneggyBodyParts;
-    float numbersLeft; // units left before entering next level
+    static int[] x; // x coordinates of sneggy
+    static int[] y; // y coordinates of sneggy
+    static float scoreMultiplierFloat; //score bonus
+    static int score;
+    static int lastScore;
+    static float sneggyBodyParts;
+    static float numbersLeft; // units left before entering next level
     float displayLevel; // level user is on including part level 1.3 ect
-    float level; // only whole level user is on level 1, 2, 3 ect
-    boolean running; // is the game running
-    boolean gameStarted; // has the first level started - first number one is hit
-    Random random = new Random();
+    static float level; // only whole level user is on level 1, 2, 3 ect
+    static boolean gameStarted; // has the first level started - first number one is hit
+    static Random random = new Random();
     DecimalFormat withCommas = new DecimalFormat("#,###");
     DecimalFormat decimal = new DecimalFormat("#,###.##");
-    int difficulty; // used for bonus - based on number of negatives on board vs amount normal for level
-    boolean waitingForNextLevel; // is the white level number on board - are we waiting to hit it
-    HighScoresList[] highScoresArray = new HighScoresList[27];
-    int gameHighScore;
-    float skip;
-    int levelChange;
-    int attempt = 0;
+    static int difficulty; // used for bonus - based on number of negatives on board vs amount normal for level
+    static boolean waitingForNextLevel; // is the white level number on board - are we waiting to hit it
+    //    HighScoresList[] highScoresArray = new HighScoresList[27];
+    static int gameHighScore;
+    static float skip;
+    static int levelChange;
+    static int attempt = 0;
+    static boolean dead = false;
     int displayPerUnit; // shown number received for hitting positive units
     double danger; // how much of the board is full
-    Bitmap bitmap;
-    Canvas canvas;
     // Our game thread for the main game loop
     private Thread thread = null;
     // Control pausing between updates
-    private long nextFrameTime;
+    private static long nextFrameTime;
     // Everything we need for drawing
 // Is the game currently playing?
-    private volatile boolean isPlaying;
-    String text = "AAA";
+    public static boolean isPlaying;
+
+    public static boolean getIsPlaying() {
+        return isPlaying;
+    }
+
+//    String text = "AAA";
+
     public SnakeEngine(Context context, Point size) {
         super(context);
 
@@ -74,8 +80,8 @@ public class SnakeEngine extends SurfaceView implements Runnable {
         SCREEN_HEIGHT = size.y;
         UNIT_SIZE = SCREEN_WIDTH / 54;
         GAME_UNITS = (SCREEN_WIDTH * SCREEN_HEIGHT) / UNIT_SIZE;
-        SQUARES_DOWN = (SCREEN_HEIGHT / UNIT_SIZE) - 3;
-        SQUARES_ACROSS = (SCREEN_WIDTH / UNIT_SIZE);
+        SQUARES_DOWN = ((SCREEN_HEIGHT - BOTTOM_PANEL) / UNIT_SIZE);
+        SQUARES_ACROSS = ((SCREEN_WIDTH - SIDE_FOR_SCORE) / UNIT_SIZE);
         TOTAL_SQUARES = SQUARES_ACROSS * SQUARES_DOWN;
         sneggyBodyParts = 11;
         x = new int[GAME_UNITS];
@@ -88,11 +94,11 @@ public class SnakeEngine extends SurfaceView implements Runnable {
         newGame();
     }
 
-    public static char getDirection(){
+    public static char getDirection() {
         return direction;
     }
 
-    public static void setDirection(char newDirection){
+    public static void setDirection(char newDirection) {
         direction = newDirection;
     }
 
@@ -115,19 +121,19 @@ public class SnakeEngine extends SurfaceView implements Runnable {
 
             // Update 10 times a second
             if (updateRequired()) {
-                moveSnake();
+                moveSneggy();
                 draw();
             }
 
         }
     }
 
-    public int[] getRandomFilteredXY(String filter) {  //get Random XY of specific type
+    public static int[] getRandomFilteredXY(String filter) {  //get Random XY of specific type
         int[] xy = new int[2];
         // create new list with only FILTER types
         ArrayList<SneggyBoard> result = new ArrayList<>();
-        for (int i = 0; i < squares.size(); i++){
-            if (squares.get(i).type.equals(filter)){
+        for (int i = 0; i < squares.size(); i++) {
+            if (squares.get(i).type.equals(filter)) {
                 result.add(squares.get(i));
             }
         }
@@ -137,10 +143,11 @@ public class SnakeEngine extends SurfaceView implements Runnable {
         return xy;
     }
 
-    public void changeAtXY(int[] xy, String newType, int valueChange) {
+    public static void changeAtXY(int[] xy, String newType, int valueChange) {
         int oldValue = getValueAtXY(xy[0], xy[1]); // find current value
-        squares.set((xy[1] * 48) + xy[0], //index instead of x y
+        squares.set((xy[1] * SQUARES_ACROSS) + xy[0], //index instead of x y
                 new SneggyBoard(newType, oldValue + valueChange, new int[]{xy[0], xy[1]})); //replace with new object
+
     }
 
     public int countType(String countType) { //count number of a type
@@ -149,15 +156,15 @@ public class SnakeEngine extends SurfaceView implements Runnable {
         // "HY" Hollow Yellow (101-199) // "SY" Solid Yellow (-100, -200, -300 ect)
         //count number of certain type
         ArrayList<SneggyBoard> result = new ArrayList<>();
-        for (int i = 0; i < squares.size(); i++){
-            if (squares.get(i).type.equals(countType)){
-                result.add (squares.get(i));
+        for (int i = 0; i < squares.size(); i++) {
+            if (squares.get(i).type.equals(countType)) {
+                result.add(squares.get(i));
             }
         }
         return result.size(); //get number based on size of list
     }
 
-    public int getValueAtXY(int x, int y) { //get value on x y
+    public static int getValueAtXY(int x, int y) { //get value on x y
         return squares.get((y * SQUARES_ACROSS) + x).value;
     }
 
@@ -218,7 +225,7 @@ public class SnakeEngine extends SurfaceView implements Runnable {
         thread.start();
     }
 
-    public void newGame() {
+    public static void newGame() {
         squares = new ArrayList<>();
         for (int j = 0; j < SQUARES_DOWN; j++) {  //Set up board values as Good Or Safe spaces with 0 values
             for (int i = 0; i < SQUARES_ACROSS; i++) {
@@ -240,13 +247,13 @@ public class SnakeEngine extends SurfaceView implements Runnable {
         score = 0;
         lastScore = 0;
         gameHighScore = 0;
-        running = true;
         scoreMultiplierFloat = 100.0f;
         x = new int[GAME_UNITS];
         y = new int[GAME_UNITS];
         level = 1;
         gameStarted = false;
         numbersLeft = level;
+
         changeAtXY(getRandomFilteredXY("E"), "G", (int) numbersLeft); //change first square to be white level number
         waitingForNextLevel = true;
         // Start with a single snake segment
@@ -257,7 +264,7 @@ public class SnakeEngine extends SurfaceView implements Runnable {
         nextFrameTime = System.currentTimeMillis();
     }
 
-    private void moveSnake() {
+    private void moveSneggy() {
         // Move the body
         for (int i = (int) sneggyBodyParts; i > 0; i--) {
             // Start at the back and move it
@@ -318,51 +325,70 @@ public class SnakeEngine extends SurfaceView implements Runnable {
 
             // Fill the screen with Game Code School black
             canvas.drawColor(Color.argb(255, 0, 0, 0));
-            paint.setColor(Color.rgb(0, 150, 0));
 
-            // Set the color of the paint to draw the snake white
-            paint.setColor(Color.argb(255, 255, 255, 255));
-
+            drawNumbers(canvas);
             // Draw the snake one block at a time
+
             int colorShift = 255 / (int) sneggyBodyParts;
             for (int i = 0; i < sneggyBodyParts; i++) {
                 paint.setStyle(Paint.Style.FILL);
-                paint.setColor(Color.rgb(255 - (colorShift * i), 0, 255 - (colorShift * i)));
+                paint.setColor(rgb(255 - (colorShift * i), 0, 255 - (colorShift * i)));
                 canvas.drawRect(x[i] * UNIT_SIZE,
                         (y[i] * UNIT_SIZE),
                         (x[i] * UNIT_SIZE) + UNIT_SIZE,
                         (y[i] * UNIT_SIZE) + UNIT_SIZE,
                         paint);
             }
-
+            checkGameOver(canvas);
             drawGrid(canvas);
-            drawNumbers(canvas);
-
-//            // Scale the HUD text
-//            paint.setTextSize(90);
-//            paint.setColor(Color.WHITE);
-//            canvas.drawText("Score: " + score, 10, 70, paint);
-
-            // Set the color of the paint to draw Bob red
-            paint.setColor(Color.argb(255, 255, 0, 0));
+            drawBottomPanel(canvas);
+            drawHighScore(canvas);
 
             // Unlock the canvas and reveal the graphics for this frame
             surfaceHolder.unlockCanvasAndPost(canvas);
+            if (dead) {
+                try {
+                    Thread.sleep(7000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                newGame();
+                dead = false;
+            }
         }
     }
+
+    public void checkGameOver(Canvas canvas) {
+        Paint message_color = new Paint();
+        String message;
+        if (!isPlaying || sneggyBodyParts <= 1 || score < 0 ||
+                (countType("E") == SQUARES_DOWN * SQUARES_ACROSS || level >= 99)) {
+            if (level >= 99) {
+                message = "Sneggy Won!";
+                message_color.setColor(Color.rgb(0, 255, 0));
+            } else {
+                message = "Sneggy Died!";
+                message_color.setColor(Color.rgb(255, 0, 0));
+            }
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(Color.BLACK);
+            drawRectangle(13 * UNIT_SIZE, 13 * UNIT_SIZE, 18 * UNIT_SIZE, 3 * UNIT_SIZE, canvas, paint);
+            paint.setTextSize(500);
+            int tempX = (SCREEN_WIDTH / 2) - (14 * UNIT_SIZE);
+            int tempY = SCREEN_HEIGHT / 2;
+            message_color.setTextSize(UNIT_SIZE * 3);
+            canvas.drawText(message, tempX, tempY, message_color);
+            dead = true;
+        }
+    }
+
 
     public boolean updateRequired() {
 
         // Are we due to update the frame
         if (nextFrameTime <= System.currentTimeMillis()) {
-            // Tenth of a second has passed
 
-            // Setup when the next update will be triggered
-            // Update the game 10 times per second
-            long FPS = 100;
-            // There are 1000 milliseconds in a second
-            long MILLIS_PER_SECOND = 1000;
-            nextFrameTime = System.currentTimeMillis() + MILLIS_PER_SECOND / FPS;
+            nextFrameTime = (long) (System.currentTimeMillis() + sneggySpeed);
 
             // Return true so that the update and draw
             // functions are executed
@@ -372,77 +398,62 @@ public class SnakeEngine extends SurfaceView implements Runnable {
         return false;
     }
 
-        @Override
-        public boolean onTouchEvent (MotionEvent motionEvent){
-            float xDiff = (x[0] * UNIT_SIZE) - motionEvent.getX();
-            float yDiff = (y[0] * UNIT_SIZE) - motionEvent.getY();
-            xDiff = (xDiff <  UNIT_SIZE) ? 0 : xDiff;
-            yDiff = (yDiff <  UNIT_SIZE) ? 0 : yDiff;
+    @SuppressLint("ClickableViewAccessibility")
+    @Override
+    public boolean onTouchEvent(MotionEvent motionEvent) {
+        float xDiff = (x[0] * UNIT_SIZE) - motionEvent.getX();
+        float yDiff = (y[0] * UNIT_SIZE) - motionEvent.getY();
+        xDiff = (xDiff < UNIT_SIZE) ? 0 : xDiff;
+        yDiff = (yDiff < UNIT_SIZE) ? 0 : yDiff;
 
-            if ((motionEvent.getAction() & MotionEvent.ACTION_MASK) == MotionEvent.ACTION_UP) {
-                switch (direction) {
+        if ((motionEvent.getAction() & MotionEvent.ACTION_MASK) == MotionEvent.ACTION_UP) {
+            switch (direction) {
 
-                    case 'U':
-                    case 'D':
-                        if (xDiff > 0) {
-                            direction = 'L';
-                        } else {
-                            direction = 'R';
-                        }
-                        break;
-
-                    case 'L':
-                    case 'R':
-                        if (yDiff > 0) {
-                            direction = 'U';
-                        } else {
-                            direction = 'D';
-                        }
-                        break;
-                }
-            }
-            return true;
-        }
-
-        public void drawGrid (Canvas canvas){
-            //draw Vertical Lines on board
-            paint.setColor(Color.rgb(0, 100, 0));
-            for (int i = 0; i <= SQUARES_ACROSS; i++) {
-                canvas.drawLine(i * UNIT_SIZE, 0, i * UNIT_SIZE, UNIT_SIZE * SQUARES_DOWN, paint);
-            }
-            //Draw Horizontal
-            for (int i = 0; i <= SQUARES_DOWN; i++) {
-                canvas.drawLine(0, i * UNIT_SIZE, UNIT_SIZE * SQUARES_ACROSS, i * UNIT_SIZE, paint);
-            }
-            paint.setStyle(Paint.Style.FILL);
-            //Draw Middle circles
-            for (int i = 0; i <= SQUARES_ACROSS; i++) {
-                for (int j = 0; j <= SQUARES_DOWN; j++) {
-                    if (((j + i) / 2) % 2 == 0) {
-                        canvas.drawCircle(i * UNIT_SIZE, j * UNIT_SIZE, 3, paint);
+                case 'U':
+                case 'D':
+                    if (xDiff > 0) {
+                        direction = 'L';
                     } else {
-                        canvas.drawCircle(i * UNIT_SIZE, j * UNIT_SIZE, 6, paint);
+                        direction = 'R';
                     }
+                    break;
+
+                case 'L':
+                case 'R':
+                    if (yDiff > 0) {
+                        direction = 'U';
+                    } else {
+                        direction = 'D';
+                    }
+                    break;
+            }
+        }
+        return true;
+    }
+
+    public void drawGrid(Canvas canvas) {
+        //draw Vertical Lines on board
+        paint.setColor(rgb(0, 100, 0));
+        paint.setStrokeWidth(1);
+        for (int i = 0; i <= SQUARES_ACROSS; i++) {
+            canvas.drawLine(i * UNIT_SIZE, 0, i * UNIT_SIZE, UNIT_SIZE * SQUARES_DOWN, paint);
+        }
+        //Draw Horizontal
+        for (int i = 0; i <= SQUARES_DOWN; i++) {
+            canvas.drawLine(0, i * UNIT_SIZE, UNIT_SIZE * SQUARES_ACROSS, i * UNIT_SIZE, paint);
+        }
+        paint.setStyle(Paint.Style.FILL);
+        //Draw Middle circles
+        for (int i = 0; i <= SQUARES_ACROSS; i++) {
+            for (int j = 0; j <= SQUARES_DOWN; j++) {
+                if (((j + i) / 2) % 2 == 0) {
+                    canvas.drawCircle(i * UNIT_SIZE, j * UNIT_SIZE, 3, paint);
+                } else {
+                    canvas.drawCircle(i * UNIT_SIZE, j * UNIT_SIZE, 6, paint);
                 }
             }
         }
-
-//    public void paintComponent(g) {
-//        super.paintComponent(g);
-//        drawNumbers(g); //colored squares and symbols
-//        drawSneggy(g); //snake
-//        if (level == 99) {
-//            running = false;
-//            gameOver(g, "Sneggy Won!", Color.red.brighter()); //display win message
-//        } else if (!running || sneggyBodyParts <= 1 || score < 0 ||
-//                (countType("E") == SQUARES_DOWN * SQUARES_ACROSS)) {
-//            running = false; // stop program
-//            gameOver(g, "Sneggy Died!", Color.red.brighter()); //display game message
-//        }
-//        drawBottomPanel(g);
-//        drawHighScore(g);
-//        nameField(g);
-//    }
+    }
 
 //    public void nameField(Graphics g) {
 //        g.setFont(new Font("Terminal", Font.PLAIN, 20));
@@ -464,87 +475,90 @@ public class SnakeEngine extends SurfaceView implements Runnable {
     public void drawRec(Canvas canvas, int x, int y, int value, boolean fill) {
         //Create Squared
         if (fill) { //Solid
-             paint.setStyle(Paint.Style.FILL);
-             drawRectangle(x * UNIT_SIZE + 2,y * UNIT_SIZE + 2,UNIT_SIZE - 2, UNIT_SIZE - 2, canvas, paint);
-             paint.setColor(Color.BLACK);
+            paint.setStyle(Paint.Style.FILL);
+            drawRectangle(x * UNIT_SIZE + 2, y * UNIT_SIZE + 2, UNIT_SIZE - 4, UNIT_SIZE - 4, canvas, paint);
+            paint.setColor(Color.BLACK);
         } else { // Hollow
             paint.setStyle(Paint.Style.STROKE);
-            drawRectangle(x * UNIT_SIZE + 2,y * UNIT_SIZE + 2,UNIT_SIZE - 2, UNIT_SIZE - 2, canvas, paint);
+            paint.setStrokeWidth(4);
+            drawRectangle(x * UNIT_SIZE + 2, y * UNIT_SIZE + 2, UNIT_SIZE - 4, UNIT_SIZE - 4, canvas, paint);
         }
         if (value > 9) { //Larger than 9
-            canvas.drawText(String.valueOf(value), (x * UNIT_SIZE) + 4, (y * UNIT_SIZE) + UNIT_SIZE - 6, paint);
+            paint.setTextSize(24);
+            paint.setStrokeWidth(1);
+            canvas.drawText(String.valueOf(value), (x * UNIT_SIZE) + 5, (y * UNIT_SIZE) + UNIT_SIZE - 8, paint);
         } else if ((value > 1) || (value == 1 && !gameStarted)) { // 2-9
-            paint.setTextSize(20);
-            canvas.drawText(String.valueOf(value), (x * UNIT_SIZE) + 7, (y * UNIT_SIZE) + UNIT_SIZE - 6, paint);
-            paint.setTextSize(16);
+            paint.setTextSize(30);
+            paint.setStrokeWidth(3);
+            canvas.drawText(String.valueOf(value), (x * UNIT_SIZE) + 10, (y * UNIT_SIZE) + UNIT_SIZE - 6, paint);
         }
     }
 
     //set numbers
     public void drawNumbers(Canvas canvas) {
         for (int i = 0; i < squares.size(); i++) {
-                paint.setTextSize(16);
-                int squareValue = squares.get(i).value;
-                int x = squares.get(i).getX();
-                int y = squares.get(i).getY();
-                //next level white square with number levels 1-99
+            paint.setTextSize(16);
+            int squareValue = squares.get(i).value;
+            int x = squares.get(i).getX();
+            int y = squares.get(i).getY();
+            //next level white square with number levels 1-99
+            paint.setColor(Color.WHITE);
+            if ((((squareValue == level) && (gameStarted) && level != 1) || ((squareValue == level) && (level == 1) && (!gameStarted)))) {
                 paint.setColor(Color.WHITE);
-                if ((((squareValue == level) && (gameStarted) && level != 1) || ((squareValue == level) && (level == 1) && (!gameStarted)))) {
-                    paint.setColor(Color.WHITE);
-                    drawRec(canvas, x, y, squareValue, false);
-                }
+                drawRec(canvas, x, y, squareValue, false);
+            }
 
-                //Yellow Squares
-                // hollow square
-                else if (squareValue > 100 && squareValue < 200) { //hollow yellow 101-199
-                    paint.setColor(Color.YELLOW);
-                    drawRec(canvas, x, y, squareValue - 100, false);
-                }
-                // crossbones
-                else if (((int) sneggyBodyParts - ((squareValue / -100f) * ((displayPerUnit * level)) / 1000f) <= 1) && (squareValue <= -100)) { //will kill user
-                    paint.setColor(Color.YELLOW);
-                    paint.setTextSize(UNIT_SIZE);
-                    canvas.drawText("☠", (x * UNIT_SIZE), (y * UNIT_SIZE) + UNIT_SIZE - 2, paint); // skull
-                    paint.setTextSize(16);
-                }
-                // solid
-                else if (squareValue <= -100) { // more than 1 yellow
-                    paint.setColor(Color.YELLOW);
-                    drawRec(canvas, x, y, squareValue / -100, true);
-                }
+            //Yellow Squares
+            // hollow square
+            else if (squareValue > 100 && squareValue < 200) { //hollow yellow 101-199
+                paint.setColor(Color.YELLOW);
+                drawRec(canvas, x, y, squareValue - 100, false);
+            }
+            // crossbones
+            else if (((int) sneggyBodyParts - ((squareValue / -100f) * ((displayPerUnit * level)) / 1000f) <= 1) && (squareValue <= -100)) { //will kill user
+                paint.setColor(Color.YELLOW);
+                paint.setTextSize(45);
+                paint.setStrokeWidth(1);
+                canvas.drawText("☠", (x * UNIT_SIZE) - 2, (y * UNIT_SIZE) + UNIT_SIZE, paint); // skull
+            }
+            // solid
+            else if (squareValue <= -100) { // more than 1 yellow
+                paint.setColor(Color.YELLOW);
+                drawRec(canvas, x, y, squareValue / -100, true);
+            }
 
-                // Red Squares
-                // Hollow
-                else if (squareValue >= 300) { // more than one hollow red
-                    paint.setColor(Color.RED);
-                    drawRec(canvas, x, y, squareValue / 300, false);
-                }
-                // Crossbones
-                else if ((squareValue <= -1) && (score + (displayPerUnit * level * squareValue) < 0)) {
-                    paint.setTextSize(UNIT_SIZE);
-                    paint.setColor(Color.RED);
-                    canvas.drawText("☠", (x * UNIT_SIZE), (y * UNIT_SIZE) + UNIT_SIZE - 2, paint); // skull
-                    paint.setTextSize(16);
-                }
-                // Solid
-                else if (squareValue <= -1) {  // solid red
-                    paint.setColor(Color.RED);
-                    drawRec(canvas, x, y, squareValue / -1, true);
-                }
+            // Red Squares
+            // Hollow
+            else if (squareValue >= 300) { // more than one hollow red
+                paint.setColor(Color.RED);
+                drawRec(canvas, x, y, squareValue / 300, false);
+            }
+            // Crossbones
+            else if ((squareValue <= -1) && (score + (displayPerUnit * level * squareValue) < 0)) {
+                paint.setColor(rgb(255, 0, 0));
+                paint.setTextSize(45);
+                paint.setStrokeWidth(1);
+                canvas.drawText("☠", (x * UNIT_SIZE) -2, (y * UNIT_SIZE) + UNIT_SIZE, paint); // skull
+            }
+            // Solid
+            else if (squareValue <= -1) {  // solid red
+                paint.setColor(Color.RED);
+                drawRec(canvas, x, y, squareValue / -1, true);
+            }
 
-                //Green Squares
-                //Smiley face circle
-                else if (squareValue == 1) { //positive one1
-                    paint.setColor(Color.GREEN);
-                    paint.setTextSize(UNIT_SIZE);
-                    canvas.drawText("\u263A", (x * UNIT_SIZE), (y * UNIT_SIZE) + UNIT_SIZE - 3, paint);
-                    paint.setTextSize(16);
-                }
-                // Hollow
-                else if (squareValue > 0) { //more than one green
-                    paint.setColor(Color.GREEN);
-                    drawRec(canvas, x, y, squareValue, false);
-                }
+            //Green Squares
+            //Smiley face circle
+            else if (squareValue == 1) { //positive one1
+                paint.setColor(Color.GREEN);
+                paint.setTextSize(50);
+                paint.setStyle(Paint.Style.FILL);
+                canvas.drawText("☻", (x * UNIT_SIZE) - 3, (y * UNIT_SIZE) + UNIT_SIZE, paint);
+            }
+            // Hollow
+            else if (squareValue > 0) { //more than one green
+                paint.setColor(Color.GREEN);
+                drawRec(canvas, x, y, squareValue, false);
+            }
         }
 
         if (level == 1) {
@@ -560,21 +574,8 @@ public class SnakeEngine extends SurfaceView implements Runnable {
         }
     }
 
-
-//    public void gameOver(Graphics g, String message, Color color) {
-//        //show GAME OVER
-//        g.setColor(Color.black);
-//        g.fillRect(15 * UNIT_SIZE, 10 * UNIT_SIZE, 18 * UNIT_SIZE, 3 * UNIT_SIZE);
-//        g.setColor(color);
-//        g.setFont(new Font("Terminal", Font.PLAIN, UNIT_SIZE * 3));
-//        FontMetrics metrics = getFontMetrics(g.getFont());
-//        g.drawString(message, (SCREEN_WIDTH - metrics.stringWidth(message)) / 2,
-//                SCREEN_HEIGHT / 2);
-//    }
-
-
 //    //set side for high score table
-//    public void drawHighScore(Graphics g) {
+public void drawHighScore(Canvas canvas) {
 //        g.setColor(Color.darkGray.darker().darker());
 //        g.fillRect(SCREEN_WIDTH, 0, SCREEN_WIDTH + SIDE_FOR_SCORE, SCREEN_HEIGHT);
 //        for (int i = 0; i <= SQUARES_ACROSS; i++) {
@@ -604,25 +605,33 @@ public class SnakeEngine extends SurfaceView implements Runnable {
 //                g.drawString(decimal.format(highScoresArray[i].getLevel()), SCREEN_WIDTH + (UNIT_SIZE * 10), y + 30);
 //            }
 //        }
-//    }
+    }
 
-//    //fill in bottom
-//    public void drawBottomPanel(Graphics g) {
+    //fill in bottom
+    public void drawBottomPanel(Canvas canvas) {
 //
 //        //draw panel
 //        g.setColor(Color.darkGray.darker().darker());
 //        g.fillRect(0, SCREEN_HEIGHT + 8, SCREEN_WIDTH + SIDE_FOR_SCORE, BOTTOM_PANEL);
 //
 //        // formatting
-//
-//        displayPerUnit = (int) ((difficulty > 100) ? (int) (scoreMultiplierFloat * (difficulty / 100f)) * (float) (125 / sneggySpeed) : (int) scoreMultiplierFloat * (float) (125 / sneggySpeed));
-//        displayLevel = level + ((level - numbersLeft) / level);
+
+        displayPerUnit = (int) ((difficulty > 100) ? (int) (scoreMultiplierFloat * (difficulty / 100f)) * (float) (125 / sneggySpeed) : (int) scoreMultiplierFloat * (float) (125 / sneggySpeed));
+        displayLevel = level + ((level - numbersLeft) / level);
 //        int notYetNextLevel = 0;
 //        if (waitingForNextLevel) {
 //            notYetNextLevel = -1;
 //        }
-//        danger = (((TOTAL_SQUARES - (countType("E"))) / TOTAL_SQUARES) / 2d); // update how many squares on board
-//
+        danger = (((TOTAL_SQUARES - (countType("E"))) / TOTAL_SQUARES) / 2d); // update how many squares on board
+
+        ///Large Score: Temp in Place of other
+//        paint.setTextSize(500);
+//        int tempX = (UNIT_SIZE * 3);
+//        int tempY = ((SQUARES_DOWN * UNIT_SIZE) + (3 * UNIT_SIZE));
+//        paint.setTextSize(UNIT_SIZE * 3);
+//        paint.setColor(Color.rgb(0, 255, 0));
+//        canvas.drawText(String.valueOf("Score: " + score), tempX, tempY, paint);
+
 //        // Game Name
 //        g.setColor(Color.magenta.brighter());
 //        g.setFont(new Font("Terminal", Font.PLAIN, 22));
@@ -658,8 +667,8 @@ public class SnakeEngine extends SurfaceView implements Runnable {
 //        }
 //        g.setColor(Color.red);
 //        g.drawString("\u25A1 + " + decimal.format(danger * 100) + "%", 950, SCREEN_HEIGHT + 85);
-//
-//    }
+
+    }
 
     public void newNumbers(int numberHit) {
         if ((numberHit == level && level > 1) || (level == 1 && !gameStarted)) { //level hit
@@ -735,9 +744,6 @@ public class SnakeEngine extends SurfaceView implements Runnable {
                     level = level + levelChange;
                     levelChange = 0;
                 }
-                if (level <= 0) {
-                    running = false;
-                }
 
                 numbersLeft = level;
                 changeAtXY(getRandomFilteredXY("E"), "G", (int) numbersLeft);
@@ -768,16 +774,16 @@ public class SnakeEngine extends SurfaceView implements Runnable {
             gameHighScore = score;
         }
 
-        if (score !=  lastScore) {
-            if (highScoresArray[0].getScore() < score) {
-                highScoresArray[0].setInitials(text);
-                highScoresArray[0].setScore(score);
-                highScoresArray[0].setLevel(displayLevel);
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                Arrays.sort(highScoresArray, Comparator.comparingInt(HighScoresList::getScore));
-            }
-            HighScoreSaver.SaveHighScore(highScoresArray);
+        if (score != lastScore) {
+//            if (highScoresArray[0].getScore() < score) {
+//                highScoresArray[0].setInitials(text);
+//                highScoresArray[0].setScore(score);
+//                highScoresArray[0].setLevel(displayLevel);
+//            }
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+//                Arrays.sort(highScoresArray, Comparator.comparingInt(HighScoresList::getScore));
+//            }
+//            HighScoreSaver.SaveHighScore(highScoresArray);
             lastScore = score;
         }
         displayLevel = level + ((level - numbersLeft) / level);

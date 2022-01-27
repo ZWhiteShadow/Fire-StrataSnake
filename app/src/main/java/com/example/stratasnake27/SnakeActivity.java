@@ -8,7 +8,7 @@ import android.view.KeyEvent;
 public class SnakeActivity extends Activity {
 
     // Declare an instance of SnakeEngine
-    SnakeEngine snakeEngine;
+    static SnakeEngine snakeEngine;
 
     @Override
     public boolean onKeyDown( int keyCode, KeyEvent event) {
@@ -61,6 +61,20 @@ public class SnakeActivity extends Activity {
                     SnakeEngine.slowerSpeed();
                 }
                 SnakeEngine.setDirection('R');
+                handled = true;
+                break;
+
+            case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
+                if (SnakeEngine.getIsPlaying()) {
+                    snakeEngine.pause();
+                }else {
+                    snakeEngine.resume();
+                }
+                handled = true;
+                break;
+
+            case KeyEvent.KEYCODE_MENU:
+                SnakeEngine.newGame();
                 handled = true;
                 break;
 
