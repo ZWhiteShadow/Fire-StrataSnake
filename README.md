@@ -74,8 +74,6 @@ Development timeline:
   - Improved score presentation
   - Continued gameplay refinement and bug fixes
 
-- **July 2026**
-  - Expanded project documentation and updated the repository README
 ---
 
 ## Skills Demonstrated
