@@ -2,11 +2,11 @@
 
 ## Overview
 
-Fire StrataSnake is a strategy-based Snake game developed for Android and Amazon Fire TV.
+Fire StrataSnake is an Android and Amazon Fire TV adaptation of my original desktop Java project, **StrataSnake**.
 
-Rather than recreating the traditional Snake experience, this project expands the classic gameplay with progression mechanics, score multipliers, persistent high scores, and strategic decision making. The goal was to build a larger Java application while gaining experience with Android development, object-oriented programming, and game architecture.
+Rather than recreating the traditional Snake experience, the game expands the classic formula with progression mechanics, score multipliers, persistent high scores, and strategic gameplay that rewards planning over simple survival.
 
-The project also provided experience designing software for television interfaces and controller-based gameplay.
+The project began as an experiment to see if I could successfully adapt my desktop game to Android and play it on an Amazon Fire TV. Along the way, it became an opportunity to learn Android development, redesign gameplay for touch and controller input, and gain experience with object-oriented programming, game architecture, and platform-specific software design.
 
 ---
 
@@ -33,46 +33,31 @@ The project also provided experience designing software for television interface
 
 ## Development Process
 
-Fire StrataSnake evolved directly from my original desktop Java project, **StrataSnake**, carrying forward its core gameplay concepts while adapting the game for Android and Amazon Fire TV.
+Fire StrataSnake was built upon the foundation established by **[StrataSnake](https://github.com/Wade-Helquist/StrataSnake)**, my original desktop Java implementation. Rather than simply porting the game, the project reworked its gameplay systems, user interface, and input handling to better suit Android devices and Amazon Fire TV while preserving the strategic mechanics that defined the original game.
 
-Development timeline:
+### January 22, 2022
 
-- **December 20–25, 2021 (StrataSnake Foundation)**
-  - Designed custom speed controls and score multiplier mechanics
-  - Created a new progression and leveling system
-  - Added diagonal movement to expand gameplay strategy
+- Created the Android project structure.
+- Rebuilt the game grid and rendering system.
+- Began adapting the original gameplay mechanics for Android.
 
-- **December 27–31, 2021 (Gameplay Expansion)**
-  - Refined collision detection and movement logic
-  - Added player-controlled difficulty adjustments
-  - Balanced scoring, colors, and strategic game mechanics
-  - Fixed gameplay bugs and improved overall stability
+### January 23, 2022
 
-- **January 2–19, 2022 (Desktop Polish)**
-  - Expanded scoring mechanics based on difficulty
-  - Improved graphics, interface layout, and player statistics
-  - Refactored code using Java Lists and simplified game logic
-  - Implemented a persistent high-score table
-  - Continued gameplay balancing, bug fixes, and interface refinements
+- Implemented core snake movement.
+- Added looping board mechanics.
+- Introduced score tracking.
 
----
+### January 24, 2022
 
-- **January 22, 2022 (Android Transition)**
-  - Began rebuilding StrataSnake for Android and Amazon Fire TV
-  - Created the Android project structure and game grid
+- Integrated directional controls for Amazon Fire TV remotes.
+- Adapted gameplay for controller-based navigation.
 
-- **January 23, 2022**
-  - Implemented core snake movement
-  - Added looping board mechanics
-  - Introduced score tracking
+### January 25–26, 2022
 
-- **January 24, 2022**
-  - Integrated directional controls for Amazon Fire TV remotes
-
-- **January 25–26, 2022**
-  - Refined board sizing and gameplay mechanics
-  - Improved score presentation
-  - Continued gameplay refinement and bug fixes
+- Refined board sizing and gameplay mechanics.
+- Improved score presentation and interface layout.
+- Continued gameplay balancing and bug fixes.
+- Optimized the experience for Android devices and Amazon Fire TV.
 
 ---
 
@@ -82,6 +67,8 @@ Development timeline:
 - Android application development
 - Object-oriented programming
 - Game architecture
+- Android SDK
+- Input handling
 - State management
 - Collision detection
 - Persistent data storage
