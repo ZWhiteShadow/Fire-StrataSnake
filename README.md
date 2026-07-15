@@ -2,7 +2,7 @@
 
 ## Overview
 
-Fire StrataSnake is an Android and Amazon Fire TV adaptation of my original desktop Java project, **StrataSnake**.
+Fire StrataSnake is an Android and Amazon Fire TV adaptation of my original desktop Java project, **[StrataSnake](https://github.com/Wade-Helquist/StrataSnake)**
 
 Rather than recreating the traditional Snake experience, the game expands the classic formula with progression mechanics, score multipliers, persistent high scores, and strategic gameplay that rewards planning over simple survival.
 
